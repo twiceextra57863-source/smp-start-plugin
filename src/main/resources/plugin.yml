@@ -1,32 +1,20 @@
-name: SMPTimer
+name: SMPTimerPlugin
 version: 1.0.0
 main: com.example.smptimer.SMPTimerPlugin
 api-version: "1.21"
-author: Twicefear
-description: A comprehensive SMP timer plugin with world border management
-website: https://github.com/yourusername/smp-timer-plugin
+author: YourName
+description: A plugin to manage SMP start timer with world border
 
 commands:
   smp:
     description: Main SMP timer command
-    usage: /smp <start|cancel|status|setspawn>
-    aliases: [smptimer]
+    usage: /smp start <minutes>
     permission: smptimer.admin
 
 permissions:
-  smptimer.*:
-    description: All SMP Timer permissions
-    default: op
-    children:
-      smptimer.admin: true
-      smptimer.bypass: true
-      
   smptimer.admin:
-    description: Allows using SMP timer admin commands
+    description: Allows using SMP timer commands
     default: op
-    
-  smptimer.bypass:
-    description: Bypass player freeze during countdown
+  smptimer.move:
+    description: Allows moving during countdown
     default: op
-    children:
-      smptimer.admin: true
