@@ -1,0 +1,29 @@
+# SMP Timer Plugin Configuration
+
+# World border settings
+border:
+  start-size: 20
+  end-size: 20000
+  expand-speed: 1.0 # blocks per second
+
+# Messages
+messages:
+  prefix: "§6[SMP] §r"
+  no-permission: "§cYou don't have permission to use this command!"
+  already-started: "§cSMP timer is already running!"
+  invalid-time: "§cPlease specify a valid time in minutes!"
+  timer-started: "§aTimer started for §e{time} §aminutes!"
+  timer-cancelled: "§cTimer cancelled!"
+  timer-expired: "§aTimer expired! SMP has started!"
+
+# Sounds
+sounds:
+  start: "entity.experience_orb.pickup"
+  tick: "block.note_block.hat"
+  end: "entity.player.levelup"
+  hit: "block.lava.pop"
+
+# Particles
+particles:
+  hit: "ASH"
+  celebration: "FIREWORK"
