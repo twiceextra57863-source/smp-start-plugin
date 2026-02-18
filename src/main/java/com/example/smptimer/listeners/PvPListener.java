@@ -1,7 +1,6 @@
 package com.example.smptimer.listeners;
 
 import com.example.smptimer.SMPTimerPlugin;
-import com.example.smptimer.utils.MessageUtils;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -19,9 +18,7 @@ public class PvPListener implements Listener {
 
     @EventHandler
     public void onPlayerDamage(EntityDamageByEntityEvent event) {
-        // Check if PvP is disabled and it's player vs player
-        if (!plugin.isPvpEnabled() && 
-            event.getEntity() instanceof Player && 
+        if (!plugin.isPvpEnabled() && event.getEntity() instanceof Player && 
             event.getDamager() instanceof Player) {
             
             event.setCancelled(true);
@@ -29,38 +26,30 @@ public class PvPListener implements Listener {
             Player damager = (Player) event.getDamager();
             Player victim = (Player) event.getEntity();
             
-            // Spawn particles
             try {
-                Particle particle = Particle.valueOf(plugin.getPluginConfig()
-                    .getString("particles.pvp-block"));
-                
-                victim.getWorld().spawnParticle(
-                    particle,
-                    victim.getLocation().add(0, 1, 0),
-                    30, 0.5, 0.5, 0.5, 0.1
-                );
-            } catch (IllegalArgumentException e) {
-                // Particle not found, use default
+                // Show ash particles
                 victim.getWorld().spawnParticle(
                     Particle.ASH,
                     victim.getLocation().add(0, 1, 0),
                     30, 0.5, 0.5, 0.5, 0.1
                 );
-            }
-            
-            // Play sound
-            try {
-                Sound sound = Sound.valueOf(plugin.getPluginConfig()
-                    .getString("sounds.pvp-block"));
-                damager.playSound(damager.getLocation(), sound, 1.0f, 1.0f);
-            } catch (IllegalArgumentException e) {
-                damager.playSound(damager.getLocation(), Sound.BLOCK_LAVA_POP, 1.0f, 1.0f);
+                
+                // Play sound
+                damager.playSound(damager.getLocation(), Sound.BLOCK_LAVA_POP, 0.5f, 1.0f);
+                
+            } catch (Exception e) {
+                // Fallback if particles/sounds don't exist
             }
             
             // Send message
-            damager.sendMessage(MessageUtils.colorize(
-                plugin.getPluginConfig().getString("messages.prefix") + 
-                plugin.getPluginConfig().getString("messages.pvp-blocked")));
+            damager.sendMessage("§6[SMP] §cPvP is not enabled until the SMP starts!");
+            damager.sendMessage("§6[SMP] §eTime left: §a" + formatTime(plugin.getTimeLeft()));
         }
+    }
+    
+    private String formatTime(int totalSeconds) {
+        int minutes = totalSeconds / 60;
+        int seconds = totalSeconds % 60;
+        return String.format("%02d:%02d", minutes, seconds);
     }
 }
