@@ -2,7 +2,7 @@ name: SMPTimer
 version: 1.0.0
 main: com.example.smptimer.SMPTimerPlugin
 api-version: "1.21"
-author: YourName
+author: Twicefear
 description: A comprehensive SMP timer plugin with world border management
 website: https://github.com/yourusername/smp-timer-plugin
 
