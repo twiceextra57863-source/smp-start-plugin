@@ -115,7 +115,6 @@ public class SMPTimerPlugin extends JavaPlugin {
             double endSize = getConfig().getDouble("border.end-size", 20000);
             long expandTime = getConfig().getLong("border.expand-time", 60);
             
-            // Convert blocks per second to total time
             border.setSize(endSize, expandTime);
             getLogger().info("World border expanding to " + (int)endSize + "x" + (int)endSize);
         } catch (Exception e) {
