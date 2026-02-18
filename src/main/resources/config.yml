@@ -6,27 +6,15 @@ border:
   end-size: 20000
   expand-time: 60 # Time in seconds to expand
 
-# Don't change this
-config-version: 1
-
 # Messages
 messages:
   prefix: "§6[SMP] §r"
   no-permission: "§cYou don't have permission to use this command!"
-  already-started: "§cSMP timer is already running!"
-  invalid-time: "§cPlease specify a valid time in minutes!"
+  already-started: "§cTimer is already running!"
+  invalid-time: "§cPlease specify a valid time in minutes (1-60)!"
   timer-started: "§aTimer started for §e{time} §aminutes!"
   timer-cancelled: "§cTimer cancelled!"
   timer-expired: "§aTimer expired! SMP has started!"
 
-# Sounds
-sounds:
-  start: "entity.experience_orb.pickup"
-  tick: "block.note_block.hat"
-  end: "entity.player.levelup"
-  hit: "block.lava.pop"
-
-# Particles
-particles:
-  hit: "ASH"
-  celebration: "FIREWORK"
+# Don't change this
+config-version: 1
