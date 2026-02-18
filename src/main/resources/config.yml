@@ -4,7 +4,10 @@
 border:
   start-size: 20
   end-size: 20000
-  expand-speed: 1.0 # blocks per second
+  expand-time: 60 # Time in seconds to expand
+
+# Don't change this
+config-version: 1
 
 # Messages
 messages:
