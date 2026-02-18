@@ -1,0 +1,17 @@
+name: SMPTimerPlugin
+version: 1.0.0
+main: com.example.smptimer.SMPTimerPlugin
+api-version: "1.21-1.21.11"
+author: Twicefear
+description: A plugin to manage SMP start timer with world border
+
+commands:
+  smp:
+    description: Main SMP timer command
+    usage: /smp start <minutes>
+    permission: smptimer.admin
+
+permissions:
+  smptimer.admin:
+    description: Allows using SMP timer commands
+    default: op
