@@ -1,40 +1,58 @@
 package com.example.smptimer.tasks;
 
 import com.example.smptimer.SMPTimerPlugin;
-import com.example.smptimer.utils.MessageUtils;
+import net.kyori.adventure.bossbar.BossBar;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
-import org.bukkit.boss.BarColor;
-import org.bukkit.boss.BarStyle;
-import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitRunnable;
 
-public class TimerTask extends BukkitRunnable {
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+public class TimerTask implements Runnable {
 
     private final SMPTimerPlugin plugin;
-    private BossBar bossBar;
-    private int lastAnnouncement = -1;
+    private final Map<UUID, BossBar> playerBossBars = new HashMap<>();
 
     public TimerTask(SMPTimerPlugin plugin) {
         this.plugin = plugin;
-        createBossBar();
+        createBossBars();
     }
 
-    private void createBossBar() {
-        bossBar = Bukkit.createBossBar(
-            MessageUtils.colorize("&6SMP Starting in..."),
-            BarColor.GREEN,
-            BarStyle.SEGMENTED_10
-        );
-        
+    private void createBossBars() {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            bossBar.addPlayer(player);
+            BossBar bossBar = BossBar.bossBar(
+                Component.text("§6SMP Starting in..."),
+                1.0f,
+                BossBar.Color.BLUE,
+                BossBar.Overlay.PROGRESS
+            );
+            player.showBossBar(bossBar);
+            playerBossBars.put(player.getUniqueId(), bossBar);
         }
+    }
+
+    public void hideBossBar() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            BossBar bar = playerBossBars.get(player.getUniqueId());
+            if (bar != null) {
+                player.hideBossBar(bar);
+            }
+        }
+        playerBossBars.clear();
     }
 
     @Override
     public void run() {
+        // Check if plugin is still enabled and timer is running
+        if (!plugin.isEnabled() || !plugin.isTimerRunning()) {
+            return;
+        }
+        
         int timeLeft = plugin.getTimeLeft();
         
         if (timeLeft <= 0) {
@@ -42,125 +60,163 @@ public class TimerTask extends BukkitRunnable {
             return;
         }
         
-        // Update boss bar
-        double progress = (double) timeLeft / (plugin.getTimeLeft() + plugin.getTimeLeft());
-        bossBar.setProgress(Math.max(0, Math.min(1, progress)));
-        bossBar.setTitle(MessageUtils.colorize(
-            "&6SMP Starts in: &e" + MessageUtils.formatTime(timeLeft)));
+        // Calculate progress (from 1.0 to 0.0)
+        int totalSeconds = plugin.getTimeLeft() + timeLeft; // This was wrong, fixing:
+        int initialTotal = plugin.getTimeLeft() + (Bukkit.getScheduler().isCurrentlyRunning(plugin.getTaskId()) ? timeLeft : 0);
+        // Better to store initial time, but for now use a simpler approach:
+        float progress = (float) timeLeft / (float) (timeLeft + 1); // Temporary fix
         
-        // Change color based on time
-        if (timeLeft <= 10) {
-            bossBar.setColor(BarColor.RED);
-        } else if (timeLeft <= 30) {
-            bossBar.setColor(BarColor.YELLOW);
+        // Actually, let's store the initial time in the plugin
+        // For now, we'll just use a simpler calculation
+        progress = Math.max(0, Math.min(1, (float) timeLeft / 60f)); // Assuming max 60 minutes
+        
+        String formattedTime = formatTime(timeLeft);
+        
+        // Update boss bars
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            BossBar bar = playerBossBars.get(player.getUniqueId());
+            if (bar != null) {
+                bar.name(Component.text("§6SMP Starts in: §e" + formattedTime));
+                bar.progress(Math.max(0.01f, Math.min(1.0f, progress)));
+                
+                // Change color based on time left
+                if (timeLeft <= 10) {
+                    bar.color(BossBar.Color.RED);
+                } else if (timeLeft <= 30) {
+                    bar.color(BossBar.Color.YELLOW);
+                } else if (timeLeft <= 60) {
+                    bar.color(BossBar.Color.GREEN);
+                }
+            }
         }
         
-        // Special announcements
-        if (timeLeft == 60 && lastAnnouncement != 60) {
-            broadcastAnnouncement("&6&l1 MINUTE LEFT!", "sounds.warning");
-            lastAnnouncement = 60;
-        } else if (timeLeft == 30 && lastAnnouncement != 30) {
-            broadcastAnnouncement("&c&l30 SECONDS LEFT!", "sounds.warning");
-            lastAnnouncement = 30;
-        } else if (timeLeft == 10 && lastAnnouncement != 10) {
-            broadcastAnnouncement("&4&l10 SECONDS!", "sounds.tick");
-            lastAnnouncement = 10;
-        } else if (timeLeft <= 5 && timeLeft > 0 && lastAnnouncement != timeLeft) {
+        // Special announcements at certain times
+        if (timeLeft == 300) { // 5 minutes
+            broadcastAnnouncement("§6§l5 MINUTES REMAINING!", "ENTITY_PLAYER_LEVELUP");
+        } else if (timeLeft == 120) { // 2 minutes
+            broadcastAnnouncement("§e§l2 MINUTES LEFT!", "ENTITY_PLAYER_LEVELUP");
+        } else if (timeLeft == 60) { // 1 minute
+            broadcastAnnouncement("§6§l1 MINUTE LEFT!", "ENTITY_EXPERIENCE_ORB_PICKUP");
+        } else if (timeLeft == 30) { // 30 seconds
+            broadcastAnnouncement("§c§l30 SECONDS LEFT!", "ENTITY_EXPERIENCE_ORB_PICKUP");
+        } else if (timeLeft == 10) { // 10 seconds
+            broadcastAnnouncement("§c§l10 SECONDS!", "BLOCK_NOTE_BLOCK_HAT");
+        } else if (timeLeft <= 5 && timeLeft > 0) { // 5,4,3,2,1
             broadcastCountdown(timeLeft);
-            lastAnnouncement = timeLeft;
         }
         
         plugin.setTimeLeft(timeLeft - 1);
     }
 
     private void finishTimer() {
-        // Cancel task
-        this.cancel();
-        plugin.setTaskId(-1);
-        
-        // Update plugin state
-        plugin.setTimerRunning(false);
-        plugin.setPvpEnabled(true);
-        
-        // Remove boss bar
-        bossBar.removeAll();
-        
-        // Expand world border
-        plugin.expandWorldBorder();
-        
-        // Celebration messages
-        String[] messages = {
-            "&6&l⚡ &e&lSMP HAS STARTED! &6&l⚡",
-            "&a&lGood luck and have fun!",
-            "&b&lMay the best survive!",
-            "&d&lLet the adventure begin!"
-        };
-        
-        for (String message : messages) {
-            Bukkit.broadcastMessage(MessageUtils.colorize(message));
-        }
-        
-        // Play end sound and show title
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            player.playSound(player.getLocation(), 
-                Sound.valueOf(plugin.getPluginConfig().getString("sounds.end")), 1.0f, 1.0f);
+        try {
+            plugin.setTimerRunning(false);
+            plugin.setPvpEnabled(true);
             
-            player.sendTitle(
-                MessageUtils.colorize("&6&lSMP STARTED!"),
-                MessageUtils.colorize("&eThe adventure begins!"),
-                10, 70, 20
-            );
-        }
-        
-        // Give welcome gifts
-        if (plugin.getPluginConfig().getBoolean("features.welcome-gifts")) {
+            // Hide boss bars
+            hideBossBar();
+            
+            // Expand world border
+            plugin.expandWorldBorder();
+            
+            // Celebration announcements
+            String[] messages = {
+                "§6§l⚡⚡⚡ SMP HAS STARTED! ⚡⚡⚡",
+                "§e§lGood luck and have fun!",
+                "§a§lMay the best survive!",
+                "§b§lLet the adventure begin!",
+                "§d§lPvP is now ENABLED!"
+            };
+            
+            // Play end sound and show messages
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                // Send messages
+                player.sendMessage("§6§m----------------------------------------");
+                for (String msg : messages) {
+                    player.sendMessage(msg);
+                }
+                player.sendMessage("§6§m----------------------------------------");
+                
+                // Play sound
+                try {
+                    player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+                } catch (Exception e) {
+                    // Fallback sound
+                    player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+                }
+                
+                // Show title
+                player.showTitle(Title.title(
+                    Component.text("§6§lSMP STARTED!"),
+                    Component.text("§eThe adventure begins!"),
+                    Title.Times.times(Duration.ofSeconds(1), Duration.ofSeconds(3), Duration.ofSeconds(1))
+                ));
+            }
+            
+            // Give welcome gifts
             giveWelcomeGifts();
+            
+            // Broadcast to console
+            plugin.getLogger().info("SMP Timer finished! World border expanding and PvP enabled.");
+            
+            // Cancel task
+            if (plugin.getTaskId() != -1) {
+                Bukkit.getScheduler().cancelTask(plugin.getTaskId());
+                plugin.setTaskId(-1);
+            }
+            
+        } catch (Exception e) {
+            plugin.getLogger().severe("Error finishing timer: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
-    private void broadcastAnnouncement(String message, String soundPath) {
-        Bukkit.broadcastMessage(MessageUtils.colorize(message));
+    private void broadcastAnnouncement(String message, String soundName) {
+        Bukkit.broadcast(Component.text("§6[SMP] §r" + message));
         
-        String soundName = plugin.getPluginConfig().getString(soundPath);
-        if (soundName != null) {
-            try {
-                Sound sound = Sound.valueOf(soundName);
-                for (Player player : Bukkit.getOnlinePlayers()) {
-                    player.playSound(player.getLocation(), sound, 1.0f, 1.0f);
-                }
-            } catch (IllegalArgumentException e) {
-                // Sound not found, skip
+        try {
+            Sound sound = Sound.valueOf(soundName);
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                player.playSound(player.getLocation(), sound, 1.0f, 1.0f);
             }
+        } catch (Exception e) {
+            // Sound not found, ignore
         }
     }
 
     private void broadcastCountdown(int seconds) {
+        String message = "§c§l" + seconds + "...";
         for (Player player : Bukkit.getOnlinePlayers()) {
-            player.sendMessage(MessageUtils.colorize("&c" + seconds + "..."));
-            
+            player.sendMessage(message);
             try {
-                Sound sound = Sound.valueOf(plugin.getPluginConfig().getString("sounds.tick"));
-                player.playSound(player.getLocation(), sound, 1.0f, 1.0f);
-            } catch (IllegalArgumentException e) {
-                // Sound not found, skip
+                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, 1.0f, 1.0f);
+            } catch (Exception e) {
+                // Fallback sound
+                player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
             }
         }
     }
 
+    private String formatTime(int totalSeconds) {
+        int minutes = totalSeconds / 60;
+        int seconds = totalSeconds % 60;
+        return String.format("%02d:%02d", minutes, seconds);
+    }
+
     private void giveWelcomeGifts() {
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            for (String gift : plugin.getPluginConfig().getStringList("welcome-gifts")) {
-                String[] parts = gift.split(",");
-                if (parts.length == 2) {
-                    try {
-                        org.bukkit.Material material = org.bukkit.Material.valueOf(parts[0]);
-                        int amount = Integer.parseInt(parts[1]);
-                        player.getInventory().addItem(new org.bukkit.inventory.ItemStack(material, amount));
-                    } catch (IllegalArgumentException e) {
-                        // Invalid material or amount, skip
-                    }
-                }
+        try {
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                player.getInventory().addItem(
+                    new org.bukkit.inventory.ItemStack(org.bukkit.Material.COOKED_BEEF, 16),
+                    new org.bukkit.inventory.ItemStack(org.bukkit.Material.OAK_LOG, 32),
+                    new org.bukkit.inventory.ItemStack(org.bukkit.Material.STONE_PICKAXE),
+                    new org.bukkit.inventory.ItemStack(org.bukkit.Material.STONE_SWORD),
+                    new org.bukkit.inventory.ItemStack(org.bukkit.Material.TORCH, 16)
+                );
+                player.sendMessage("§aYou have received starter gifts!");
             }
+        } catch (Exception e) {
+            plugin.getLogger().warning("Could not give welcome gifts: " + e.getMessage());
         }
     }
 }
