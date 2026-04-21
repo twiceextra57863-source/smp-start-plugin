@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "vulkanboost",
+  "version": "${version}",
+  "name": "VulkanBoost",
+  "description": "High-performance Fabric mod with Vulkan-like optimizations and C++ native core.",
+  "authors": [
+    "Manus"
+  ],
+  "contact": {
+    "homepage": "https://github.com/twiceextra57863-source/smp-start-plugin",
+    "sources": "https://github.com/twiceextra57863-source/smp-start-plugin"
+  },
+  "license": "MIT",
+  "icon": "assets/vulkanboost/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.example.vulkanboost.VulkanBoost"
+    ]
+  },
+  "mixins": [
+    "vulkanboost.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.9",
+    "minecraft": "~1.21.4",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
