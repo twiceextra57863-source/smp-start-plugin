@@ -7,14 +7,13 @@ VulkanBoost is a high-performance Fabric mod for Minecraft 1.21.4 designed to pr
 
 ### 1. Java Layer (Fabric/Mixin)
 - **Entrypoint**: Initializes the mod and loads the native library.
-- **Mixins**: Hooks into Minecraft's rendering pipeline (LWJGL/OpenGL) to redirect calls to the native Vulkan-like engine.
-- **Event Hooks**: Monitors game state (explosions, player movement, block placement) to trigger proactive optimizations.
+- **Mixins**: Hooks into `GameRenderer` and `LevelRenderer` to redirect calls to the native Vulkan-like engine.
+- **Event Hooks**: Monitors game state to trigger proactive optimizations.
 
 ### 2. Native Layer (C++)
-- **VulkanBridge**: A thin wrapper that mimics Vulkan's efficiency on top of existing renderers (OpenGL, Zink, LTW).
-- **MemoryManager**: Optimized C++ memory allocation to reduce Java GC pressure.
+- **VulkanEngine**: A high-performance core that batches draw calls and manages render commands with minimal overhead.
+- **MemoryManager**: Optimized C++ memory allocation to reduce Java GC pressure and prevent lag spikes.
 - **ThreadManager**: Parallelizes chunk rendering and entity processing using native threads.
-- **LagReducer**: Specific logic to handle camera movement, block placement, and high player counts without frame drops.
 
 ### 3. Optimization Features
 - **Zero-Lag Camera**: Decouples camera movement from main game ticks for ultra-smooth rotation.
@@ -26,3 +25,8 @@ VulkanBoost is a high-performance Fabric mod for Minecraft 1.21.4 designed to pr
 - **Gradle**: Manages Java dependencies and Fabric Loom.
 - **CMake**: Compiles the C++ native library for Windows, Linux, and macOS.
 - **GitHub Actions**: Automated CI/CD to compile both Java and C++ components into a single JAR.
+
+## Performance Targets
+- **FPS**: 200+ on mid-range hardware.
+- **Smoothness**: Consistent frame times even during heavy explosions or high player counts.
+- **Compatibility**: Works with LTW, Zink, and OpenGL renderers without crashes.
